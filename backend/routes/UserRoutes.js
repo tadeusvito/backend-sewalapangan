@@ -8,6 +8,7 @@ import {
   login
 } from "../controller/UserController.js";
 import { verifyToken } from "../middleware/VerifyToken.js";
+import { refreshToken } from "../controller/RefreshToken.js";
 
 const router = express.Router();
 
@@ -17,5 +18,6 @@ router.post('/login', login);
 router.post("/register", register);
 router.put("/users/:id", verifyToken, updateUser);
 router.delete("/users/:id", verifyToken, deleteUser);
+router.get("/token", refreshToken);
 
 export default router;
