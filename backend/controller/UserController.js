@@ -21,7 +21,7 @@ export const getUsers = async (req, res) => {
 // Menambahkan data User baru
 export const register = async (req, res) => {
     try {
-        const { nama_user, email, password, nomor_telepon, alamat, role = "Penyewa" } = req.body;
+        const { nama_user, email, password, nomor_telepon, alamat, role = "Penyewa", photo_url } = req.body;
 
         const existingUser = await User.findOne({
             where: {
@@ -47,7 +47,8 @@ export const register = async (req, res) => {
             nomor_telepon,
             alamat,
             refresh_token: null,
-            role
+            role,
+            photo_url // tambahkan photo_url
         });
 
         // Return success but don't include password in response
@@ -69,55 +70,55 @@ export const login = async (req, res) => {
         const { email, password } = req.body;
 
         // Check if user exists
-      const user = await User.findOne({
-        where: { email }
-      });
+        const user = await User.findOne({
+            where: { email }
+        });
   
-      if (!user) {
-        return res.status(400).json({ status: "Error", message: "Invalid email or password" });
-      }
+        if (!user) {
+            return res.status(400).json({ status: "Error", message: "Invalid email or password" });
+        }
   
-      // Compare passwords
-      const validPassword = await bcrypt.compare(password, user.password);
+        // Compare passwords
+        const validPassword = await bcrypt.compare(password, user.password);
   
-      if (!validPassword) {
-        return res.status(400).json({ status: "Error", message: "Invalid email or password" });
-      }
+        if (!validPassword) {
+            return res.status(400).json({ status: "Error", message: "Invalid email or password" });
+        }
   
-      // Prepare user data (exclude sensitive fields)
-      const userPlain = user.toJSON();
-      const { password: _, refresh_token: __, ...safeUserData } = userPlain;
+        // Prepare user data (exclude sensitive fields)
+        const userPlain = user.toJSON();
+        const { password: _, refresh_token: __, ...safeUserData } = userPlain;
   
-      // Generate access token
-      const accessToken = jwt.sign(safeUserData, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "30s"
-      });
+        // Generate access token
+        const accessToken = jwt.sign(safeUserData, process.env.ACCESS_TOKEN_SECRET, {
+          expiresIn: "30s"
+        });
   
-      // Generate refresh token
-      const refreshToken = jwt.sign(safeUserData, process.env.REFRESH_TOKEN_SECRET, {
-        expiresIn: "1d"
-      });
+        // Generate refresh token
+        const refreshToken = jwt.sign(safeUserData, process.env.REFRESH_TOKEN_SECRET, {
+          expiresIn: "1d"
+        });
   
-      // Update user refresh token in DB
-      await User.update(
-        { refresh_token: refreshToken },
-        { where: { id_user: user.id_user } }
-      );
+        // Update user refresh token in DB
+        await User.update(
+          { refresh_token: refreshToken },
+          { where: { id_user: user.id_user } }
+        );
   
-      // Set refresh token in cookie
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true, // Make sure it's not accessible from JavaScript
-        sameSite: "None", // Required for cross-site cookies
-        maxAge: 24 * 60 * 60 * 1000, // 1 day
-        secure: true, // Set to true only for HTTPS
-      });
+        // Set refresh token in cookie
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true, // Make sure it's not accessible from JavaScript
+          sameSite: "None", // Required for cross-site cookies
+          maxAge: 24 * 60 * 60 * 1000, // 1 day
+          secure: true, // Set to true only for HTTPS
+        });
   
-      res.status(200).json({
-        status: "Success",
-        message: "Login successful",
-        data: safeUserData,
-        accessToken,
-      });
+        res.status(200).json({
+          status: "Success",
+          message: "Login successful",
+          data: safeUserData, // sudah termasuk photo_url
+          accessToken,
+        });
     } catch (error) {
         console.log(error.message);
         res.status(500).json({ status: "Error", message: error.message });
